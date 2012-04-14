@@ -94,12 +94,18 @@ def get_index_context(index):
 
 def get_source_context(tables, index, valid_fields, content_type=None):
     params = DEFAULT_SPHINX_PARAMS
+    
+    if params['database_engine'] == 'pgsql':
+        field_names = ['{0}'.format(f[1]) for f in valid_fields]
+    else:
+        field_names = ['`{0}`'.format(f[1]) for f in valid_fields]
+        
     params.update({
         'tables': tables,
         'source_name': index,
         'index_name': index,
-        'database_engine': _get_database_engine(),
-        'field_names': ['`{0}`'.format(f[1]) for f in valid_fields],
+        'database_engine': params['database_engine'],
+        'field_names': field_names,
         'group_columns': [f[1] for f in valid_fields if f[2] or isinstance(f[0], models.BooleanField) or isinstance(f[0], models.IntegerField)],
         'date_columns': [f[1] for f in valid_fields if issubclass(f[0], models.DateTimeField) or issubclass(f[0], models.DateField)],
         'float_columns': [f[1] for f in valid_fields if isinstance(f[0], models.FloatField) or isinstance(f[0], models.DecimalField)],
@@ -150,7 +156,10 @@ def generate_index_for_model(model_class, index=None, sphinx_params={}):
 
 def generate_source_for_model(model_class, index=None, sphinx_params={}):
     """Generates a source configmration for a model."""
-    t = _get_template('source.conf', index)
+    if DEFAULT_SPHINX_PARAMS['database_engine'] == 'pgsql':
+        t = _get_template('source.conf', index)
+    else:
+        t = _get_template('source_pg.conf', index)
 
     def _the_tuple(f):
         return (f.__class__, f.column, getattr(f.rel, 'to', None), f.choices)

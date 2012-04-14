@@ -5,4 +5,5 @@ build/
 dist/
 *.pyc
 *.py~
+*~
 django_sphinx.egg-info/
